@@ -3,6 +3,8 @@
 Generate a large batch of image samples from a model and save them as a large
 numpy array. This can be used to produce samples for FID evaluation.
 """
+import matplotlib.pyplot as plt
+
 from utils.fixseed import fixseed
 import os
 import numpy as np
@@ -28,6 +30,7 @@ def main():
     max_frames = 196 if args.dataset in ['kit', 'humanml'] else 60
     fps = 12.5 if args.dataset == 'kit' else 20
     n_frames = min(max_frames, int(args.motion_length*fps))
+    #if no prompt, use sample data
     is_using_data = not any([args.input_text, args.text_prompt, args.action_file, args.action_name])
     dist_util.setup_dist(args.device)
     if out_path == '':
@@ -38,7 +41,7 @@ def main():
         elif args.input_text != '':
             out_path += '_' + os.path.basename(args.input_text).replace('.txt', '').replace(' ', '_').replace('.', '')
 
-    # this block must be called BEFORE the dataset is loaded
+    # this block must be called BEFORE the dataset is loaded(actually this part won't be used if is_using_data is true)
     if args.text_prompt != '':
         texts = [args.text_prompt]
         args.num_samples = 1
@@ -66,6 +69,7 @@ def main():
     # (specify through the --seed flag)
     args.batch_size = args.num_samples  # Sampling a single batch from the testset, with exactly args.num_samples
 
+    #sample texts seems to be loaded from here...here we get default text set from the dataset folder
     print('Loading dataset...')
     data = load_dataset(args, max_frames, n_frames)
     total_num_samples = args.num_samples * args.num_repetitions
@@ -83,6 +87,7 @@ def main():
     model.eval()  # disable random masking
 
     if is_using_data:
+        #true for generate from test set prompts
         iterator = iter(data)
         _, model_kwargs = next(iterator)
     else:
@@ -127,6 +132,8 @@ def main():
 
         # Recover XYZ *positions* from HumanML3D vector representation
         if model.data_rep == 'hml_vec':
+            #generate from test set prompts enter
+            #manipulates the tensor (a concept includes matrix)
             n_joints = 22 if sample.shape[1] == 263 else 21
             sample = data.dataset.t2m_dataset.inv_transform(sample.cpu().permute(0, 2, 3, 1)).float()
             sample = recover_from_ric(sample, n_joints)
@@ -142,6 +149,7 @@ def main():
             all_text += ['unconstrained'] * args.num_samples
         else:
             text_key = 'text' if 'text' in model_kwargs['y'] else 'action_text'
+            #Here we add all text from sample data to the all_text to be used as text prompt..
             all_text += model_kwargs['y'][text_key]
 
         all_motions.append(sample.cpu().numpy())
@@ -159,6 +167,7 @@ def main():
         shutil.rmtree(out_path)
     os.makedirs(out_path)
 
+#Here the resulted npy file is saved
     npy_path = os.path.join(out_path, 'results.npy')
     print(f"saving results file to [{npy_path}]")
     np.save(npy_path,
@@ -169,6 +178,7 @@ def main():
     with open(npy_path.replace('.npy', '_len.txt'), 'w') as fw:
         fw.write('\n'.join([str(l) for l in all_lengths]))
 
+#Here visualization start to have issues
     print(f"saving visualizations to [{out_path}]...")
     skeleton = paramUtil.kit_kinematic_chain if args.dataset == 'kit' else paramUtil.t2m_kinematic_chain
 
@@ -195,7 +205,9 @@ def main():
                                                row_print_template, all_print_template, row_file_template, all_file_template,
                                                caption, num_samples_in_out_file, rep_files, sample_files, sample_i)
 
+
     abs_path = os.path.abspath(out_path)
+    plt.show()
     print(f'[Done] Results are at [{abs_path}]')
 
 

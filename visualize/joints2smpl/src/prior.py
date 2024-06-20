@@ -23,6 +23,7 @@ import os
 
 import time
 import pickle
+import pickletools
 
 import numpy as np
 
@@ -122,9 +123,13 @@ class MaxMixturePrior(nn.Module):
             print('The path to the mixture prior "{}"'.format(full_gmm_fn) +
                   ' does not exist, exiting!')
             sys.exit(-1)
-
-        with open(full_gmm_fn, 'rb') as f:
-            gmm = pickle.load(f, encoding='latin1')
+        try:
+            with open(full_gmm_fn, 'rb') as f:
+                #pickletools.dis(f)
+                gmm = pickle.load(f, encoding='latin1')
+        except Exception as e:
+            print("Failed to load the GMM file due to:", str(e))
+            raise
 
         if type(gmm) == dict:
             means = gmm['means'].astype(np_dtype)

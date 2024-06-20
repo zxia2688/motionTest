@@ -662,7 +662,12 @@ class TextOnlyDataset(data.Dataset):
             try:
                 text_data = []
                 flag = False
-                with cs.open(pjoin(opt.text_dir, name + '.txt')) as f:
+                patht=pjoin(opt.text_dir, name + '.txt')
+                print(patht)
+                absdir=r"C:\Users\Test\myproject\motionTest\motion-diffusion-model\dataset\HumanML3D\texts\texts"
+                pathabs=pjoin(absdir, name + '.txt')
+                print(pathabs)
+                with cs.open(pjoin(absdir, name + '.txt')) as f:
                     for line in f.readlines():
                         text_dict = {}
                         line_split = line.strip().split('#')
@@ -693,8 +698,9 @@ class TextOnlyDataset(data.Dataset):
                 if flag:
                     data_dict[name] = {'text': text_data}
                     new_name_list.append(name)
-            except:
-                pass
+            except Exception as e:
+                print(f"an error occurrer: {e}")
+
 
         self.length_arr = np.array(length_list)
         self.data_dict = data_dict
@@ -726,6 +732,8 @@ class HumanML3D(data.Dataset):
         self.dataname = 't2m'
 
         # Configurations of T2M dataset and KIT dataset is almost the same
+        print("Current Working Directory:", os.getcwd())
+        assert os.path.exists(datapath), 'Arguments text file was not found!'
         abs_base_path = f'.'
         dataset_opt_path = pjoin(abs_base_path, datapath)
         device = None  # torch.device('cuda:4') # This param is not in use in this context

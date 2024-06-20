@@ -6,7 +6,7 @@ import torch
 from visualize.simplify_loc2rot import joints2smpl
 
 class npy2obj:
-    def __init__(self, npy_path, sample_idx, rep_idx, device=0, cuda=True):
+    def __init__(self, npy_path, sample_idx, rep_idx, device=0, cuda=False):
         self.npy_path = npy_path
         self.motions = np.load(self.npy_path, allow_pickle=True)
         if self.npy_path.endswith('.npz'):
